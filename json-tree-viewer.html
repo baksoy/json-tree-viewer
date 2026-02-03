@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Tree Viewer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+        (function() {
+            var t = localStorage.getItem('json-viewer-theme');
+            if (!t) t = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+    <style>
+        :root {
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --radius-xl: 18px;
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --accent-indigo: #0d9488;
+            --accent-violet: #14b8a6;
+            --accent-gradient: linear-gradient(135deg, #0d9488 0%, #14b8a6 50%, #5eead4 100%);
+        }
+
+        [data-theme="dark"] {
+            --bg-deepest: #08080d;
+            --bg-base: #0e0e16;
+            --bg-surface: #15151f;
+            --bg-elevated: #1c1c2b;
+            --bg-hover: #242438;
+            --bg-active: #2a2a42;
+
+            --border-subtle: rgba(255,255,255,0.04);
+            --border-default: rgba(255,255,255,0.07);
+            --border-strong: rgba(255,255,255,0.12);
+            --border-hover: rgba(255,255,255,0.18);
+
+            --text-primary: #e8eaf0;
+            --text-secondary: #9ba1b0;
+            --text-muted: #5c6170;
+            --text-faint: #3d4150;
+
+            --type-string: #34d399;
+            --type-string-bg: rgba(16,185,129,0.08);
+            --type-number: #60a5fa;
+            --type-number-bg: rgba(59,130,246,0.08);
+            --type-boolean: #fbbf24;
+            --type-boolean-bg: rgba(245,158,11,0.08);
+            --type-null: #64748b;
+            --type-null-bg: rgba(100,116,139,0.08);
+            --type-object: #fb923c;
+            --type-object-bg: rgba(251,146,60,0.08);
+            --type-array: #f472b6;
+            --type-array-bg: rgba(236,72,153,0.08);
+
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.15);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.2);
+            --shadow-lg: 0 8px 30px rgba(0,0,0,0.5), 0 4px 10px rgba(0,0,0,0.3);
+            --shadow-glow: 0 0 20px rgba(13,148,136,0.15), 0 0 40px rgba(13,148,136,0.05);
+
+            --sidebar-bg: rgba(14,14,22,0.85);
+            --json-key-color: #99f6e4;
+            --noise-opacity: 0.015;
+            --scrollbar-thumb: rgba(255,255,255,0.08);
+            --scrollbar-thumb-hover: rgba(255,255,255,0.16);
+            --toc-active-bg: rgba(13,148,136,0.08);
+            --toc-active-color: #5eead4;
+            --accent-glow-subtle: rgba(13,148,136,0.04);
+            --flash-bg: rgba(13,148,136,0.15);
+            --toggle-hover-bg: rgba(13,148,136,0.1);
+            --search-match-bg: rgba(250,204,21,0.04);
+        }
+
+        [data-theme="light"] {
+            --bg-deepest: #f5f7fa;
+            --bg-base: #eef1f6;
+            --bg-surface: #ffffff;
+            --bg-elevated: #f7f8fb;
+            --bg-hover: #ecedf3;
+            --bg-active: #e2e4ec;
+
+            --border-subtle: rgba(0,0,0,0.04);
+            --border-default: rgba(0,0,0,0.08);
+            --border-strong: rgba(0,0,0,0.13);
+            --border-hover: rgba(0,0,0,0.2);
+
+            --text-primary: #1a1c2e;
+            --text-secondary: #4b5064;
+            --text-muted: #7c8194;
+            --text-faint: #b5b9c8;
+
+            --type-string: #059669;
+            --type-string-bg: rgba(5,150,105,0.08);
+            --type-number: #2563eb;
+            --type-number-bg: rgba(37,99,235,0.08);
+            --type-boolean: #d97706;
+            --type-boolean-bg: rgba(217,119,6,0.08);
+            --type-null: #64748b;
+            --type-null-bg: rgba(100,116,139,0.08);
+            --type-object: #ea580c;
+            --type-object-bg: rgba(234,88,12,0.07);
+            --type-array: #db2777;
+            --type-array-bg: rgba(219,39,119,0.07);
+
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.03);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.04);
+            --shadow-lg: 0 8px 30px rgba(0,0,0,0.1), 0 4px 10px rgba(0,0,0,0.05);
+            --shadow-glow: 0 0 20px rgba(13,148,136,0.08), 0 0 40px rgba(13,148,136,0.03);
+
+            --sidebar-bg: rgba(255,255,255,0.8);
+            --json-key-color: #0f766e;
+            --noise-opacity: 0.008;
+            --scrollbar-thumb: rgba(0,0,0,0.1);
+            --scrollbar-thumb-hover: rgba(0,0,0,0.2);
+            --toc-active-bg: rgba(13,148,136,0.06);
+            --toc-active-color: #0f766e;
+            --accent-glow-subtle: rgba(13,148,136,0.03);
+            --flash-bg: rgba(13,148,136,0.08);
+            --toggle-hover-bg: rgba(13,148,136,0.08);
+            --search-match-bg: rgba(250,204,21,0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Source Code Pro', 'Fira Code', 'Cascadia Code', monospace;
+            background-color: var(--bg-deepest);
+            color: var(--text-primary);
+            padding: 0;
+            line-height: 1.7;
+            font-size: 15px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            letter-spacing: 0.01em;
+        }
+
+        /* Noise texture overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            opacity: var(--noise-opacity);
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb);
+            border-radius: 10px;
+            transition: background 0.2s;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--scrollbar-thumb-hover);
+        }
+        ::-webkit-scrollbar-corner {
+            background: transparent;
+        }
+
+        .page-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ─── Main Content ─────────────────────────────────────── */
+
+        .main-content {
+            flex: 1;
+            min-width: 0;
+            overflow-x: auto;
+            padding: 12px 64px 40px 80px;
+            background: var(--bg-base);
+            background-image: radial-gradient(ellipse 80% 60% at 50% -20%, var(--accent-glow-subtle), transparent);
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 1100px;
+            width: 100%;
+        }
+
+        /* ─── Header / Toolbar ─────────────────────────────────── */
+
+        .toolbar-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .toolbar-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toolbar-logo svg {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+        }
+
+        h1 {
+            margin: 0;
+            color: var(--text-primary);
+            font-size: 28px;
+            font-weight: 600;
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            letter-spacing: -0.5px;
+        }
+
+        h1 .h1-accent {
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ─── File Input ───────────────────────────────────────── */
+
+        .file-input-wrapper {
+            margin-bottom: 14px;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            padding: 8px 14px;
+            border: 1px dashed var(--border-strong);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-surface);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s var(--ease-out);
+            height: 44px;
+        }
+
+        .file-input-wrapper input[type="file"]:hover {
+            border-color: var(--accent-indigo);
+            background: var(--bg-elevated);
+        }
+
+        .file-input-wrapper input[type="file"]::file-selector-button {
+            font-family: 'Outfit', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            padding: 6px 14px;
+            margin-right: 12px;
+            border: none;
+            border-radius: var(--radius-sm);
+            background: var(--accent-gradient);
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.2s var(--ease-out);
+        }
+
+        .file-input-wrapper input[type="file"]::file-selector-button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        /* ─── Minimal Drop Hint ────────────────────────────────── */
+
+        .drop-hint {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 13px;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px 10px;
+            border-radius: var(--radius-sm);
+            transition: all 0.2s var(--ease-out);
+            margin-left: auto;
+        }
+
+        .drop-hint:hover {
+            color: var(--text-secondary);
+            background: var(--bg-hover);
+        }
+
+        .drop-hint svg {
+            width: 14px;
+            height: 14px;
+            opacity: 0.6;
+        }
+
+        .drop-hint.success {
+            color: var(--type-string);
+        }
+
+        /* Full-page drag overlay - minimal */
+        .drag-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(13,148,136,0.06);
+            border: 3px dashed var(--accent-indigo);
+            z-index: 9998;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s var(--ease-out);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .drag-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .drag-overlay-text {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--accent-indigo);
+            background: var(--bg-surface);
+            padding: 12px 24px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* ─── Controls Bar ─────────────────────────────────────── */
+
+        .controls {
+            margin-bottom: 16px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        button {
+            padding: 0 20px;
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            transition: all 0.2s var(--ease-out);
+            white-space: nowrap;
+            height: 44px;
+        }
+
+        button:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border-color: var(--border-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        button:active {
+            transform: translateY(0);
+            background: var(--bg-active);
+        }
+
+        /* ─── Search ───────────────────────────────────────────── */
+
+        .search-wrapper {
+            position: relative;
+            flex: 1;
+            max-width: 420px;
+        }
+
+        .search-wrapper input {
+            width: 100%;
+            padding: 0 80px 0 42px;
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-md);
+            font-size: 15px;
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            outline: none;
+            transition: all 0.25s var(--ease-out);
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            height: 44px;
+        }
+
+        .search-wrapper input::placeholder {
+            color: var(--text-faint);
+        }
+
+        .search-wrapper input:focus {
+            border-color: var(--accent-indigo);
+            box-shadow: 0 0 0 3px rgba(13,148,136,0.12), var(--shadow-glow);
+            background: var(--bg-elevated);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-faint);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-clear {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none !important;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            line-height: 1;
+            display: none;
+            transition: all 0.15s;
+        }
+
+        .search-clear:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: none;
+        }
+
+        .search-info {
+            position: absolute;
+            right: 38px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 13px;
+            color: var(--type-string);
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            pointer-events: none;
+            white-space: nowrap;
+            display: none;
+            font-weight: 600;
+        }
+
+        .search-info.no-matches {
+            color: #f87171;
+        }
+
+        .search-nav {
+            display: none;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .search-nav button {
+            padding: 0 10px;
+            font-size: 13px;
+            background: var(--bg-elevated);
+            color: var(--text-muted);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            line-height: 1;
+            height: 32px;
+        }
+
+        .search-nav button:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        /* ─── JSON Tree ────────────────────────────────────────── */
+
+        .json-tree {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-lg);
+            padding: 28px 32px;
+            overflow-x: auto;
+            box-shadow: var(--shadow-md);
+        }
+
+        @keyframes flash-highlight {
+            0% { background-color: var(--flash-bg); }
+            60% { background-color: var(--flash-bg); }
+            100% { background-color: transparent; }
+        }
+
+        .json-line.flash {
+            animation: flash-highlight 1.2s var(--ease-out);
+        }
+
+        .json-line {
+            padding: 4px 6px;
+            white-space: nowrap;
+            border-radius: 4px;
+            transition: background-color 0.12s;
+            font-size: 15px;
+        }
+
+        .json-line:hover {
+            background-color: var(--bg-hover);
+        }
+
+        .json-children {
+            margin-left: 26px;
+            display: none;
+            border-left: 1px solid var(--border-subtle);
+            padding-left: 10px;
+            transition: border-color 0.2s;
+        }
+
+        .json-children.expanded {
+            display: block;
+        }
+
+        .json-children:hover {
+            border-left-color: var(--border-strong);
+        }
+
+        .toggle-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            user-select: none;
+            color: var(--text-faint);
+            font-size: 10px;
+            text-align: center;
+            vertical-align: middle;
+            border-radius: 4px;
+            transition: all 0.2s var(--ease-out);
+            margin-right: 4px;
+        }
+
+        .toggle-btn:hover {
+            color: var(--accent-indigo);
+            background: var(--toggle-hover-bg);
+        }
+
+        .toggle-btn.expanded {
+            display: inline-flex;
+            transform: rotate(90deg);
+            color: var(--text-muted);
+        }
+
+        .json-key {
+            color: var(--json-key-color);
+            font-weight: 500;
+            font-size: 15px;
+        }
+
+        .json-separator {
+            color: var(--text-faint);
+        }
+
+        .json-brace {
+            color: var(--text-muted);
+        }
+
+        .prop-count {
+            display: inline-block;
+            background: var(--bg-hover);
+            color: var(--text-muted);
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin: 0 6px;
+            font-weight: 500;
+            vertical-align: middle;
+            font-family: 'Outfit', sans-serif;
+            border: 1px solid var(--border-subtle);
+            letter-spacing: 0.2px;
+        }
+
+        .json-value-string {
+            color: var(--type-string);
+            font-size: 15px;
+        }
+
+        .json-value-number {
+            color: var(--type-number);
+            font-weight: 500;
+            font-size: 15px;
+        }
+
+        .json-value-boolean {
+            color: var(--type-boolean);
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .json-value-null {
+            color: var(--type-null);
+            font-style: italic;
+            font-size: 15px;
+        }
+
+        .no-toggle {
+            display: inline-block;
+            width: 24px;
+        }
+
+        /* ─── Search Highlights ────────────────────────────────── */
+
+        .search-highlight {
+            background-color: rgba(250,204,21,0.2);
+            outline: 1px solid rgba(250,204,21,0.4);
+            border-radius: 3px;
+            padding: 0 2px;
+        }
+
+        .search-highlight.current {
+            background-color: rgba(251,146,60,0.3);
+            outline-color: rgba(251,146,60,0.6);
+        }
+
+        .json-line.search-match {
+            background-color: var(--search-match-bg);
+        }
+
+        .json-line.search-dimmed {
+            opacity: 0.3;
+        }
+
+        /* ─── Theme Transition (only during switch, not page load) */
+
+        html.theme-transitioning,
+        html.theme-transitioning *,
+        html.theme-transitioning *::before,
+        html.theme-transitioning *::after {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease !important;
+        }
+
+        /* ─── Theme Toggle ─────────────────────────────────────── */
+
+        .theme-toggle {
+            margin-left: auto;
+            width: 42px;
+            height: 42px;
+            padding: 0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-strong);
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.25s var(--ease-out);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .theme-toggle:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border-color: var(--accent-indigo);
+            transform: rotate(15deg) scale(1.08);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .theme-toggle:active {
+            transform: rotate(0deg) scale(0.95);
+        }
+
+        .theme-icon {
+            position: absolute;
+            transition: opacity 0.35s var(--ease-out), transform 0.35s var(--ease-out);
+        }
+
+        [data-theme="dark"] .theme-icon-sun {
+            opacity: 1;
+            transform: rotate(0deg);
+        }
+
+        [data-theme="dark"] .theme-icon-moon {
+            opacity: 0;
+            transform: rotate(-90deg) scale(0.5);
+        }
+
+        [data-theme="light"] .theme-icon-sun {
+            opacity: 0;
+            transform: rotate(90deg) scale(0.5);
+        }
+
+        [data-theme="light"] .theme-icon-moon {
+            opacity: 1;
+            transform: rotate(0deg);
+        }
+
+        /* ─── Responsive ───────────────────────────────────────── */
+        @media (max-width: 1024px) {
+            .main-content {
+                padding: 12px 40px 32px 48px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 10px 20px 24px;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            .json-tree {
+                padding: 20px;
+            }
+
+            .json-line {
+                font-size: 14px;
+            }
+
+            .json-key,
+            .json-value-string,
+            .json-value-number,
+            .json-value-boolean,
+            .json-value-null {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Minimal drag overlay -->
+    <div class="drag-overlay" id="dragOverlay">
+        <div class="drag-overlay-text">Drop to load JSON</div>
+    </div>
+
+    <input type="file" id="fileInput" accept=".json" style="display: none;" />
+
+    <div class="page-layout">
+        <div class="main-content">
+            <div class="container">
+                <div class="toolbar-header">
+                    <div class="toolbar-logo">
+                        <svg width="36" height="36" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="28" height="28" rx="7" fill="url(#logo-grad)"/>
+                            <path d="M8 10.5L10.5 8H14L11.5 10.5H15L12.5 13H16L13.5 15.5H17L14.5 18H18L15.5 20.5H12L14.5 18H11L13.5 15.5H10L12.5 13H9L11.5 10.5H8Z" fill="white" fill-opacity="0.9"/>
+                            <defs>
+                                <linearGradient id="logo-grad" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+                                    <stop stop-color="#0d9488"/>
+                                    <stop offset="1" stop-color="#5eead4"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <h1>JSON <span class="h1-accent">Tree Viewer</span></h1>
+                    </div>
+                    <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode" aria-label="Toggle theme">
+                        <svg class="theme-icon theme-icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="5"/>
+                            <line x1="12" y1="1" x2="12" y2="3"/>
+                            <line x1="12" y1="21" x2="12" y2="23"/>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                            <line x1="1" y1="12" x2="3" y2="12"/>
+                            <line x1="21" y1="12" x2="23" y2="12"/>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                        </svg>
+                        <svg class="theme-icon theme-icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                    </button>
+                </div>
+
+
+                <div class="controls">
+                    <div class="search-wrapper">
+                        <span class="search-icon">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"/>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            </svg>
+                        </span>
+                        <input type="text" id="searchInput" placeholder="Search keys and values… (⌘F)" />
+                        <span class="search-info" id="searchInfo"></span>
+                        <button class="search-clear" id="searchClear" onclick="clearSearch()">×</button>
+                    </div>
+                    <div class="search-nav" id="searchNav">
+                        <button onclick="navigateMatch(-1)" title="Previous match (Shift+Enter)">▲</button>
+                        <button onclick="navigateMatch(1)" title="Next match (Enter)">▼</button>
+                    </div>
+                    <button onclick="expandAll()">Expand All</button>
+                    <button onclick="collapseAll()">Collapse All</button>
+                    <span class="drop-hint" id="dropHint" title="Click to browse or drag a file anywhere">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        Drop JSON anywhere
+                    </span>
+                </div>
+
+                <div class="json-tree" id="jsonTree"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let jsonData = null;
+
+        const embeddedJSON = {"transcriptInfo":{"preparedFor":"Carrer College","documentId":"X87G78XGX","parchmentStudentId":"228023282","transcriptType":"Official Transcript received via Parchment","generatedDate":"2025-09-09","pageCount":"1"},"student":{"fullName":"Sygyvia, Eylyy","studentNumber":"012021012","ssn":"0000","dateOfBirth":"2008-08-08","gender":"F","grade":"12","counselor":"Lala, Gene"},"school":{"districtName":"TOWNSHIP H S DIST 211","schoolName":"Palatine High School","address":{"street":"111 N. Rihlwing Road","city":"Palatine","state":"IL","zipCode":"60074"},"phone":"(847)555-5655","fax":"(847)755-5555"},"gpa":{"cumulativeWeighted":"3.385","cumulativeUnweighted":"3.163","gradingScale":"4.0"},"enrollment":[{"startDate":"2022-06-06","endDate":"2022-07-21","gradeLevel":"8","schoolName":"Summer School","schoolType":"Summer School"},{"startDate":"2022-08-11","endDate":"2023-05-26","gradeLevel":"9","schoolName":"Palatine High School","schoolType":"Regular"},{"startDate":"2023-06-01","endDate":"2023-07-20","gradeLevel":"9","schoolName":"Summer School","schoolType":"Summer School"},{"startDate":"2023-08-14","endDate":"2024-05-24","gradeLevel":"10","schoolName":"Palatine High School","schoolType":"Regular"},{"startDate":"2024-06-03","endDate":"2024-07-18","gradeLevel":"10","schoolName":"Summer School","schoolType":"Summer School"},{"startDate":"2024-08-12","endDate":"2025-05-23","gradeLevel":"11","schoolName":"Palatine High School","schoolType":"Regular"},{"startDate":"2025-06-02","endDate":"2025-07-17","gradeLevel":"11","schoolName":"Summer School","schoolType":"Summer School"},{"startDate":"2025-08-11","endDate":null,"gradeLevel":"12","schoolName":"Palatine High School","schoolType":"Regular"}],"terms":[{"academicYear":"2022-2023","gradeLevel":"9","termName":"Term 1","schoolName":"Palatine High School","termGPA":"3.429","termUnweightedGPA":"3.429","courses":[{"courseCode":"S13701","courseName":"Biology","mark":"B-","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"E10201","courseName":"English 1","mark":"B-","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"P14401","courseName":"Freshman Wellness","mark":"A","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"R16601","courseName":"Leadership and Efficacy 1","mark":"A","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"C12401","courseName":"Orchestra 1","mark":"A-","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"M21701","courseName":"Plane and Solid Geometry","mark":"B","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"L27601","courseName":"Spanish-Heritage-Beg.","mark":"B","weight":"0.5000","credit":"0.5","courseType":"Regular"}]},{"academicYear":"2022-2023","gradeLevel":"9","termName":"Term 2","schoolName":"Palatine High School","termGPA":"3.143","termUnweightedGPA":"3.143","courses":[{"courseCode":"S13702","courseName":"Biology","mark":"C","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"E10202","courseName":"English 1","mark":"B","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"P14402","courseName":"Freshman Wellness","mark":"A","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"R16602","courseName":"Leadership and Efficacy 1","mark":"A+","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"C12402","courseName":"Orchestra 1","mark":"B+","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"M21702","courseName":"Plane and Solid Geometry","mark":"C","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"L27602","courseName":"Spanish-Heritage-Beg.","mark":"A","weight":"0.5000","credit":"0.5","courseType":"Regular"}]},{"academicYear":"2023-2024","gradeLevel":"10","termName":"Term 1","schoolName":"Palatine High School","termGPA":"3.429","termUnweightedGPA":"3.429","courses":[{"courseCode":"M31701","courseName":"Algebra 2","mark":"C+","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"A65603","courseName":"Art in Contemporary Society","mark":"A-","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"H26601","courseName":"Culinary Arts 1","mark":"A+","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"S23401","courseName":"Earth Science","mark":"A-","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"E20201","courseName":"English 2","mark":"B+","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"P24401","courseName":"Sophomore Wellness","mark":"A","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"L37601","courseName":"Spanish Heritage Intermediate2","mark":"B+","weight":"0.5000","credit":"0.5","courseType":"Regular"}]},{"academicYear":"2023-2024","gradeLevel":"10","termName":"Term 2","schoolName":"Palatine High School","termGPA":"3.333","termUnweightedGPA":"3.333","courses":[{"courseCode":"M31702","courseName":"Algebra 2","mark":"B-","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"H26602","courseName":"Culinary Arts 1","mark":"A+","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"P20703","courseName":"Dr-Ed BTW/CI","mark":"A","weight":"0.0000","credit":"0.25","courseType":"Regular"},{"courseCode":"S23402","courseName":"Earth Science","mark":"B","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"E20202","courseName":"English 2","mark":"B","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"L67502","courseName":"Heritage Spanish I","mark":"B","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"P24402","courseName":"Sophomore Wellness","mark":"A-","weight":"0.5000","credit":"0.5","courseType":"Regular"}]},{"academicYear":"2024-2025","gradeLevel":"11","termName":"Term 1","schoolName":"Palatine High School","termGPA":"2.667","termUnweightedGPA":"2.667","courses":[{"courseCode":"P36101","courseName":"Adventure Education","mark":"A","weight":"0.0000","credit":"0.25","courseType":"Regular"},{"courseCode":"E31901","courseName":"AP Language and Composition","mark":"C","weight":"0.5000","credit":"0.5","courseType":"AP"},{"courseCode":"L57901","courseName":"AP Spanish Lang. and Cult.","mark":"A-","weight":"0.5000","credit":"0.5","courseType":"AP"},{"courseCode":"G36901","courseName":"AP United States History","mark":"D+","weight":"0.5000","credit":"0.5","courseType":"AP"},{"courseCode":"S33201","courseName":"Chemistry","mark":"B","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"R31301","courseName":"Health Careers and Med Terms","mark":"B","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"M43601","courseName":"Statistics-College Alg.","mark":"B-","weight":"0.5000","credit":"0.5","courseType":"Regular"}]},{"academicYear":"2024-2025","gradeLevel":"11","termName":"Term 2","schoolName":"Palatine High School","termGPA":"2.500","termUnweightedGPA":"2.500","courses":[{"courseCode":"P36102","courseName":"Adventure Education","mark":"A","weight":"0.0000","credit":"0.25","courseType":"Regular"},{"courseCode":"E31902","courseName":"AP Language and Composition","mark":"B","weight":"0.5000","credit":"0.5","courseType":"AP"},{"courseCode":"L57902","courseName":"AP Spanish Lang. and Cult.","mark":"A","weight":"0.5000","credit":"0.5","courseType":"AP"},{"courseCode":"G36902","courseName":"AP United States History","mark":"B","weight":"0.5000","credit":"0.5","courseType":"AP"},{"courseCode":"S33202","courseName":"Chemistry","mark":"C","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"M64702","courseName":"College Algebra","mark":"C+","weight":"0.5000","credit":"0.5","courseType":"Regular"},{"courseCode":"R61302","courseName":"Health Careers & Med Terms","mark":"C","weight":"0.5000","credit":"0.5","courseType":"Regular"}]}],"creditSummary":[{"subjectArea":"Art","creditsAttempted":"0.500","creditsEarned":"0.500"},{"subjectArea":"Business Education","creditsAttempted":"0.500","creditsEarned":"0.500"},{"subjectArea":"Driver Education","creditsAttempted":"0.250","creditsEarned":"0.250"},{"subjectArea":"English","creditsAttempted":"3.000","creditsEarned":"3.000"},{"subjectArea":"Family and Consumer Science","creditsAttempted":"1.000","creditsEarned":"1.000"},{"subjectArea":"Mathematics","creditsAttempted":"3.500","creditsEarned":"3.000"},{"subjectArea":"Music","creditsAttempted":"1.000","creditsEarned":"1.000"},{"subjectArea":"Physical Education","creditsAttempted":"2.500","creditsEarned":"2.500"},{"subjectArea":"Science","creditsAttempted":"3.000","creditsEarned":"3.000"},{"subjectArea":"Social Studies","creditsAttempted":"1.000","creditsEarned":"1.000"},{"subjectArea":"Study Skills","creditsAttempted":"1.000","creditsEarned":"1.000"},{"subjectArea":"Summer Enrichment","creditsAttempted":"1.500","creditsEarned":"1.500"},{"subjectArea":"Vocational Education","creditsAttempted":"1.000","creditsEarned":"1.000"},{"subjectArea":"World Language","creditsAttempted":"3.000","creditsEarned":"3.000"},{"subjectArea":"Total","creditsAttempted":"22.750","creditsEarned":"22.250"}],"inProgressCourses":[{"courseCode":"M40801","courseName":"Advanced Trig & Pre-Calculus/H","credit":"0.500"},{"courseCode":"M40802","courseName":"Advanced Trig & Pre-Calculus/H","credit":"0.500"},{"courseCode":"L58901","courseName":"AP Spanish Lit-Culture","credit":"0.500"},{"courseCode":"L58902","courseName":"AP Spanish Lit-Culture","credit":"0.500"},{"courseCode":"R61401","courseName":"Certified Nursing Assistant","credit":"0.500"},{"courseCode":"R61402","courseName":"Certified Nursing Assistant","credit":"0.500"},{"courseCode":"G44201","courseName":"Civics","credit":"0.500"},{"courseCode":"G44202","courseName":"Civics","credit":"0.500"},{"courseCode":"E62503","courseName":"College Composition","credit":"0.500"},{"courseCode":"E60303","courseName":"Fundamentals of Speech","credit":"0.500"},{"courseCode":"R46601","courseName":"Leadership and Efficacy 4","credit":"0.500"},{"courseCode":"R46602","courseName":"Leadership and Efficacy 4","credit":"0.500"},{"courseCode":"S43201","courseName":"Physics","credit":"0.500"},{"courseCode":"S43202","courseName":"Physics","credit":"0.500"}],"stateSeals":{"biliteracySeal":{"hasEarned":"true","languages":["English","Spanish"],"dateEarned":"2025-05-22"}},"waiverEvaluation":{"totalSemestersCompleted":"6","hasUSCourseworkOnly":"true","geometryCourses":[{"courseName":"Plane and Solid Geometry","term":"2022-2023 Term 1","grade":"B","creditsEarned":"0.5","isStandalone":"true"},{"courseName":"Plane and Solid Geometry","term":"2022-2023 Term 2","grade":"C","creditsEarned":"0.5","isStandalone":"true"}],"geometryCoursesInstruction":"Include ALL semesters of geometry courses found on transcript","totalGeometryCredits":"1.0","chemistryCourses":[{"courseName":"Chemistry","term":"2024-2025 Term 1","grade":"B","creditsEarned":"0.5","isStandalone":"true"},{"courseName":"Chemistry","term":"2024-2025 Term 2","grade":"C","creditsEarned":"0.5","isStandalone":"true"}],"chemistryCoursesInstruction":"Include ALL semesters of chemistry courses found on transcript","totalChemistryCredits":"1.0","seniorYearMathCourses":[{"courseName":"Advanced Trig & Pre-Calculus/H","term":"In-Progress","grade":null,"isNCAAEligible":"true"}],"seniorYearMathInstruction":"Include ALL math courses from the student's senior year (grade 12)"},"diplomaCode":{"suggestedCode":"P4","reasoning":"Student is in-progress with a 4.0 scale and under age 21."},"standardized_tests":{},"decision_from_rule":{"transcript_source_check":{"is_high_school":"true","action":""},"english_placement":{"eligible":"false","reason":"Less than 7 semesters","soatest_score":"0","test_code":"EGPA"},"math_placement":{"eligible":"false","reason":"Less than 7 semesters","soatest_score":"0","test_code":"MGPA","expiration_note":""},"geometry_waiver":{"eligible":"true","reason":"Completed full year with B and C","soatest_score":"1","test_code":"GEOW"},"chemistry_waiver":{"eligible":"true","reason":"Completed full year with B and C","soatest_score":"1","test_code":"CHEM"},"biliteracy_seal":{"detected":"true","action":"Review for potential 8 hours credit award"}}};
+
+        function loadJSON() {
+            jsonData = embeddedJSON;
+            renderJSON(jsonData);
+        }
+
+        // --- Drag and Drop (full page) ---
+        const dragOverlay = document.getElementById('dragOverlay');
+        const dropHint = document.getElementById('dropHint');
+        const fileInput = document.getElementById('fileInput');
+        let dragCounter = 0;
+
+        // Click hint to open file dialog
+        dropHint.addEventListener('click', () => fileInput.click());
+
+        // File input change
+        fileInput.addEventListener('change', function(e) {
+            if (e.target.files[0]) handleFile(e.target.files[0]);
+        });
+
+        // Prevent defaults
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
+            document.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); }, false);
+        });
+
+        // Show/hide overlay on drag
+        document.addEventListener('dragenter', function(e) {
+            dragCounter++;
+            if (e.dataTransfer.types.includes('Files')) {
+                dragOverlay.classList.add('visible');
+            }
+        });
+
+        document.addEventListener('dragleave', function() {
+            dragCounter--;
+            if (dragCounter === 0) dragOverlay.classList.remove('visible');
+        });
+
+        document.addEventListener('drop', function(e) {
+            dragCounter = 0;
+            dragOverlay.classList.remove('visible');
+            if (e.dataTransfer.files.length > 0) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            if (!file.name.endsWith('.json') && file.type !== 'application/json') {
+                alert('Please drop a valid JSON file');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    jsonData = JSON.parse(e.target.result);
+
+                    // Brief success feedback
+                    dropHint.classList.add('success');
+                    const orig = dropHint.textContent;
+                    dropHint.innerHTML = dropHint.querySelector('svg').outerHTML + ' Loaded!';
+                    setTimeout(() => {
+                        dropHint.classList.remove('success');
+                        dropHint.innerHTML = dropHint.querySelector('svg').outerHTML + ' Drop JSON anywhere';
+                    }, 1500);
+
+                    renderJSON(jsonData);
+                } catch (error) {
+                    alert('Invalid JSON: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function renderJSON(data) {
+            const container = document.getElementById('jsonTree');
+            container.innerHTML = '';
+            container.appendChild(buildTree(data, true));
+        }
+
+        function buildTree(data, isRoot) {
+            if (data === null || typeof data !== 'object') {
+                return createPrimitiveSpan(data);
+            }
+
+            const fragment = document.createDocumentFragment();
+            const isArray = Array.isArray(data);
+            const entries = isArray ? data : Object.keys(data);
+            const count = isArray ? data.length : entries.length;
+
+            if (isRoot) {
+                const openLine = document.createElement('div');
+                openLine.className = 'json-line';
+                openLine.textContent = '{';
+                fragment.appendChild(openLine);
+
+                const childrenDiv = document.createElement('div');
+                childrenDiv.className = 'json-children expanded';
+
+                entries.forEach(function(key) {
+                    childrenDiv.appendChild(buildKeyValueLine(key, data[key]));
+                });
+
+                fragment.appendChild(childrenDiv);
+
+                const closeLine = document.createElement('div');
+                closeLine.className = 'json-line';
+                closeLine.textContent = '}';
+                fragment.appendChild(closeLine);
+            }
+
+            return fragment;
+        }
+
+        function buildKeyValueLine(key, value) {
+            const line = document.createElement('div');
+            line.className = 'json-line';
+            line.setAttribute('data-key', key);
+
+            if (value !== null && typeof value === 'object') {
+                const isArr = Array.isArray(value);
+                const count = isArr ? value.length : Object.keys(value).length;
+
+                const toggle = document.createElement('span');
+                toggle.className = 'toggle-btn';
+                toggle.textContent = '▶';
+                line.appendChild(toggle);
+
+                const keySpan = document.createElement('span');
+                keySpan.className = 'json-key';
+                keySpan.textContent = key;
+                line.appendChild(keySpan);
+
+                const sep = document.createElement('span');
+                sep.className = 'json-separator';
+                sep.textContent = ' : ';
+                line.appendChild(sep);
+
+                const openBrace = document.createElement('span');
+                openBrace.className = 'json-brace';
+                openBrace.textContent = isArr ? '[ ' : '{ ';
+                line.appendChild(openBrace);
+
+                const countBadge = document.createElement('span');
+                countBadge.className = 'prop-count';
+                if (isArr) {
+                    countBadge.textContent = count + (count === 1 ? ' item' : ' items');
+                } else {
+                    countBadge.textContent = count + (count === 1 ? ' prop' : ' props');
+                }
+                line.appendChild(countBadge);
+
+                const closeBrace = document.createElement('span');
+                closeBrace.className = 'json-brace';
+                closeBrace.textContent = isArr ? ' ]' : ' }';
+                line.appendChild(closeBrace);
+
+                const childrenDiv = document.createElement('div');
+                childrenDiv.className = 'json-children';
+
+                if (isArr) {
+                    value.forEach(function(item, idx) {
+                        if (item !== null && typeof item === 'object') {
+                            const itemKeys = Array.isArray(item) ? item : Object.keys(item);
+                            const itemCount = Array.isArray(item) ? item.length : itemKeys.length;
+                            const itemIsArr = Array.isArray(item);
+
+                            const itemLine = document.createElement('div');
+                            itemLine.className = 'json-line';
+
+                            const itemToggle = document.createElement('span');
+                            itemToggle.className = 'toggle-btn';
+                            itemToggle.textContent = '▶';
+                            itemLine.appendChild(itemToggle);
+
+                            const idxSpan = document.createElement('span');
+                            idxSpan.className = 'json-key';
+                            idxSpan.textContent = idx;
+                            itemLine.appendChild(idxSpan);
+
+                            const itemSep = document.createElement('span');
+                            itemSep.className = 'json-separator';
+                            itemSep.textContent = ' : ';
+                            itemLine.appendChild(itemSep);
+
+                            const itemOpen = document.createElement('span');
+                            itemOpen.className = 'json-brace';
+                            itemOpen.textContent = itemIsArr ? '[ ' : '{ ';
+                            itemLine.appendChild(itemOpen);
+
+                            const itemBadge = document.createElement('span');
+                            itemBadge.className = 'prop-count';
+                            if (itemIsArr) {
+                                itemBadge.textContent = itemCount + (itemCount === 1 ? ' item' : ' items');
+                            } else {
+                                itemBadge.textContent = itemCount + (itemCount === 1 ? ' prop' : ' props');
+                            }
+                            itemLine.appendChild(itemBadge);
+
+                            const itemClose = document.createElement('span');
+                            itemClose.className = 'json-brace';
+                            itemClose.textContent = itemIsArr ? ' ]' : ' }';
+                            itemLine.appendChild(itemClose);
+
+                            const itemChildren = document.createElement('div');
+                            itemChildren.className = 'json-children';
+                            buildObjectChildren(item, itemChildren);
+                            itemLine.appendChild(itemChildren);
+
+                            itemToggle.addEventListener('click', function() {
+                                itemToggle.classList.toggle('expanded');
+                                itemChildren.classList.toggle('expanded');
+                            });
+
+                            childrenDiv.appendChild(itemLine);
+                        } else {
+                            const primLine = document.createElement('div');
+                            primLine.className = 'json-line';
+                            const spacer = document.createElement('span');
+                            spacer.className = 'no-toggle';
+                            primLine.appendChild(spacer);
+                            const idxSpan = document.createElement('span');
+                            idxSpan.className = 'json-key';
+                            idxSpan.textContent = idx;
+                            primLine.appendChild(idxSpan);
+                            const primSep = document.createElement('span');
+                            primSep.className = 'json-separator';
+                            primSep.textContent = ' : ';
+                            primLine.appendChild(primSep);
+                            primLine.appendChild(createPrimitiveSpan(item));
+                            childrenDiv.appendChild(primLine);
+                        }
+                    });
+                } else {
+                    buildObjectChildren(value, childrenDiv);
+                }
+
+                line.appendChild(childrenDiv);
+
+                toggle.addEventListener('click', function() {
+                    toggle.classList.toggle('expanded');
+                    childrenDiv.classList.toggle('expanded');
+                });
+            } else {
+                const spacer = document.createElement('span');
+                spacer.className = 'no-toggle';
+                line.appendChild(spacer);
+
+                const keySpan = document.createElement('span');
+                keySpan.className = 'json-key';
+                keySpan.textContent = key;
+                line.appendChild(keySpan);
+
+                const sep = document.createElement('span');
+                sep.className = 'json-separator';
+                sep.textContent = ' : ';
+                line.appendChild(sep);
+
+                line.appendChild(createPrimitiveSpan(value));
+            }
+
+            return line;
+        }
+
+        function buildObjectChildren(obj, container) {
+            if (Array.isArray(obj)) {
+                obj.forEach(function(item, idx) {
+                    container.appendChild(buildKeyValueLine(String(idx), item));
+                });
+            } else {
+                Object.keys(obj).forEach(function(key) {
+                    container.appendChild(buildKeyValueLine(key, obj[key]));
+                });
+            }
+        }
+
+        function createPrimitiveSpan(value) {
+            const span = document.createElement('span');
+            if (typeof value === 'string') {
+                span.className = 'json-value-string';
+                span.textContent = '"' + value + '"';
+            } else if (typeof value === 'number') {
+                span.className = 'json-value-number';
+                span.textContent = String(value);
+            } else if (typeof value === 'boolean') {
+                span.className = 'json-value-boolean';
+                span.textContent = String(value);
+            } else if (value === null) {
+                span.className = 'json-value-null';
+                span.textContent = 'null';
+            }
+            return span;
+        }
+
+        function expandAll() {
+            document.querySelectorAll('.toggle-btn').forEach(function(t) { t.classList.add('expanded'); });
+            document.querySelectorAll('.json-children').forEach(function(c) { c.classList.add('expanded'); });
+        }
+
+        function collapseAll() {
+            document.querySelectorAll('.toggle-btn').forEach(function(t) { t.classList.remove('expanded'); });
+            document.querySelectorAll('.json-children').forEach(function(c) { c.classList.remove('expanded'); });
+            var rootChildren = document.querySelector('#jsonTree > .json-children');
+            if (rootChildren) rootChildren.classList.add('expanded');
+        }
+
+        // --- Search / Filter ---
+        let searchMatches = [];
+        let currentMatchIndex = -1;
+        let searchDebounceTimer = null;
+        let originalTexts = new Map();
+
+        var searchInput = document.getElementById('searchInput');
+        var searchInfo = document.getElementById('searchInfo');
+        var searchClear = document.getElementById('searchClear');
+        var searchNav = document.getElementById('searchNav');
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(function() {
+                performSearch(searchInput.value.trim());
+            }, 250);
+        });
+
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (searchMatches.length > 0) {
+                    navigateMatch(e.shiftKey ? -1 : 1);
+                }
+            }
+            if (e.key === 'Escape') {
+                clearSearch();
+                searchInput.blur();
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                searchInput.focus();
+                searchInput.select();
+            }
+        });
+
+        function performSearch(query) {
+            restoreOriginalTexts();
+            searchMatches = [];
+            currentMatchIndex = -1;
+
+            document.querySelectorAll('.json-line').forEach(function(line) {
+                line.classList.remove('search-match', 'search-dimmed');
+            });
+
+            if (!query) {
+                searchInfo.style.display = 'none';
+                searchClear.style.display = 'none';
+                searchNav.style.display = 'none';
+                collapseAll();
+                return;
+            }
+
+            searchClear.style.display = 'block';
+
+            var selectors = '.json-key, .json-value-string, .json-value-number, .json-value-boolean, .json-value-null';
+            var allSpans = document.querySelectorAll('#jsonTree ' + selectors);
+            var lowerQuery = query.toLowerCase();
+
+            allSpans.forEach(function(span) {
+                var text = span.textContent;
+                var lowerText = text.toLowerCase();
+                var idx = lowerText.indexOf(lowerQuery);
+                if (idx === -1) return;
+
+                if (!originalTexts.has(span)) {
+                    originalTexts.set(span, text);
+                }
+
+                var frag = document.createDocumentFragment();
+                var remaining = text;
+                var offset = 0;
+
+                while (idx !== -1) {
+                    if (idx > 0) {
+                        frag.appendChild(document.createTextNode(remaining.substring(0, idx)));
+                    }
+                    var hlSpan = document.createElement('span');
+                    hlSpan.className = 'search-highlight';
+                    hlSpan.textContent = remaining.substring(idx, idx + query.length);
+                    frag.appendChild(hlSpan);
+                    searchMatches.push(hlSpan);
+
+                    remaining = remaining.substring(idx + query.length);
+                    var lowerRemaining = remaining.toLowerCase();
+                    idx = lowerRemaining.indexOf(lowerQuery);
+                }
+                if (remaining) {
+                    frag.appendChild(document.createTextNode(remaining));
+                }
+
+                span.textContent = '';
+                span.appendChild(frag);
+
+                var line = span.closest('.json-line');
+                if (line) line.classList.add('search-match');
+
+                expandAncestors(span);
+            });
+
+            if (searchMatches.length > 0) {
+                searchInfo.style.display = 'block';
+                searchNav.style.display = 'flex';
+                currentMatchIndex = 0;
+                updateMatchInfo();
+                searchMatches[0].classList.add('current');
+                searchMatches[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                searchInfo.style.display = 'block';
+                searchInfo.textContent = 'No matches';
+                searchInfo.classList.add('no-matches');
+                searchNav.style.display = 'none';
+            }
+        }
+
+        function restoreOriginalTexts() {
+            originalTexts.forEach(function(text, span) {
+                span.textContent = text;
+            });
+            originalTexts.clear();
+        }
+
+        function expandAncestors(element) {
+            var node = element.parentElement;
+            while (node && node.id !== 'jsonTree') {
+                if (node.classList.contains('json-children')) {
+                    node.classList.add('expanded');
+                    var parentLine = node.parentElement;
+                    if (parentLine) {
+                        var toggle = parentLine.querySelector(':scope > .toggle-btn');
+                        if (toggle) toggle.classList.add('expanded');
+                    }
+                }
+                node = node.parentElement;
+            }
+        }
+
+        function navigateMatch(direction) {
+            if (searchMatches.length === 0) return;
+            searchMatches[currentMatchIndex].classList.remove('current');
+            currentMatchIndex = (currentMatchIndex + direction + searchMatches.length) % searchMatches.length;
+            searchMatches[currentMatchIndex].classList.add('current');
+            updateMatchInfo();
+            searchMatches[currentMatchIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function updateMatchInfo() {
+            searchInfo.textContent = (currentMatchIndex + 1) + ' of ' + searchMatches.length;
+            searchInfo.classList.remove('no-matches');
+        }
+
+        function clearSearch() {
+            searchInput.value = '';
+            restoreOriginalTexts();
+            searchMatches = [];
+            currentMatchIndex = -1;
+            searchInfo.style.display = 'none';
+            searchClear.style.display = 'none';
+            searchNav.style.display = 'none';
+            document.querySelectorAll('.json-line').forEach(function(line) {
+                line.classList.remove('search-match', 'search-dimmed');
+            });
+            collapseAll();
+        }
+
+        document.getElementById('themeToggle').addEventListener('click', function() {
+            var current = document.documentElement.getAttribute('data-theme');
+            var next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.classList.add('theme-transitioning');
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('json-viewer-theme', next);
+            setTimeout(function() {
+                document.documentElement.classList.remove('theme-transitioning');
+            }, 350);
+        });
+
+        loadJSON();
+    </script>
+</body>
+</html>
