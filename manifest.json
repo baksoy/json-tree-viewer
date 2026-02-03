@@ -1,0 +1,17 @@
+{
+  "name": "JSON Tree Viewer",
+  "short_name": "JsonTree",
+  "description": "A beautiful JSON tree viewer",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#08080d",
+  "theme_color": "#0d9488",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
