@@ -516,7 +516,8 @@
             font-size: 15px;
         }
 
-        .json-line:hover {
+        /* Only highlight the innermost hovered line, not ancestors */
+        .json-line:hover:not(:has(.json-line:hover)) {
             background-color: var(--bg-hover);
         }
 
