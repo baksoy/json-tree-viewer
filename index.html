@@ -294,6 +294,7 @@
             border-radius: var(--radius-sm);
             transition: all 0.2s var(--ease-out);
             margin-left: auto;
+            position: relative;
         }
 
         .drop-hint:hover {
@@ -309,6 +310,176 @@
 
         .drop-hint.success {
             color: var(--type-string);
+        }
+
+        /* ─── Import Modal ─────────────────────────────────────── */
+
+        .import-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.25s var(--ease-out);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .import-modal-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .import-modal {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-xl);
+            padding: 28px 32px;
+            max-width: 420px;
+            width: 90%;
+            box-shadow: var(--shadow-lg), var(--shadow-glow);
+            transform: scale(0.92) translateY(10px);
+            transition: transform 0.3s var(--ease-spring);
+        }
+
+        .import-modal-overlay.visible .import-modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .import-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .import-modal-title {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .import-modal-close {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .import-modal-close:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            transform: none;
+            box-shadow: none;
+        }
+
+        .import-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .import-option {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px 18px;
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            background: var(--bg-elevated);
+            cursor: pointer;
+            transition: all 0.2s var(--ease-out);
+        }
+
+        .import-option:hover {
+            border-color: var(--accent-indigo);
+            background: var(--bg-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .import-option:active {
+            transform: translateY(0);
+        }
+
+        .import-option-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .import-option-icon svg {
+            width: 20px;
+            height: 20px;
+            color: white;
+        }
+
+        .import-option-text {
+            flex: 1;
+        }
+
+        .import-option-title {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .import-option-desc {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .import-option-kbd {
+            font-family: 'Source Code Pro', monospace;
+            font-size: 11px;
+            color: var(--text-faint);
+            background: var(--bg-active);
+            padding: 3px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .import-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 4px 0;
+        }
+
+        .import-divider::before,
+        .import-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-default);
+        }
+
+        .import-divider span {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 12px;
+            color: var(--text-faint);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         /* Full-page drag overlay - minimal */
@@ -378,6 +549,17 @@
         button:active {
             transform: translateY(0);
             background: var(--bg-active);
+        }
+
+        .clear-btn {
+            color: var(--text-muted);
+            border-color: var(--border-default);
+        }
+
+        .clear-btn:hover {
+            color: #f87171;
+            border-color: rgba(248,113,113,0.3);
+            background: rgba(248,113,113,0.08);
         }
 
         /* ─── Search ───────────────────────────────────────────── */
@@ -752,6 +934,49 @@
         <div class="drag-overlay-text">Drop to load JSON</div>
     </div>
 
+    <!-- Import Modal -->
+    <div class="import-modal-overlay" id="importModal">
+        <div class="import-modal">
+            <div class="import-modal-header">
+                <span class="import-modal-title">Import JSON</span>
+                <button class="import-modal-close" id="importModalClose" aria-label="Close">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="import-options">
+                <div class="import-option" id="importFromFile">
+                    <div class="import-option-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                    </div>
+                    <div class="import-option-text">
+                        <div class="import-option-title">Upload File</div>
+                        <div class="import-option-desc">Select a .json file from your device</div>
+                    </div>
+                </div>
+                <div class="import-divider"><span>or</span></div>
+                <div class="import-option" id="importFromClipboard">
+                    <div class="import-option-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                        </svg>
+                    </div>
+                    <div class="import-option-text">
+                        <div class="import-option-title">Paste from Clipboard</div>
+                        <div class="import-option-desc">Import JSON currently in your clipboard</div>
+                    </div>
+                    <span class="import-option-kbd">⌘V</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <input type="file" id="fileInput" accept=".json" style="display: none;" />
 
     <div class="page-layout">
@@ -808,6 +1033,7 @@
                     </div>
                     <button onclick="expandAll()">Expand All</button>
                     <button onclick="collapseAll()">Collapse All</button>
+                    <button onclick="clearJSON()" class="clear-btn" id="clearBtn" title="Clear loaded JSON">Clear</button>
                     <span class="drop-hint" id="dropHint" title="Click to browse or drag a file anywhere">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -859,10 +1085,73 @@
         const dragOverlay = document.getElementById('dragOverlay');
         const dropHint = document.getElementById('dropHint');
         const fileInput = document.getElementById('fileInput');
+        const importModal = document.getElementById('importModal');
+        const importModalClose = document.getElementById('importModalClose');
+        const importFromFile = document.getElementById('importFromFile');
+        const importFromClipboard = document.getElementById('importFromClipboard');
         let dragCounter = 0;
 
-        // Click hint to open file dialog
-        dropHint.addEventListener('click', () => fileInput.click());
+        // Click hint to open import modal
+        dropHint.addEventListener('click', () => openImportModal());
+
+        // Import modal functions
+        function openImportModal() {
+            importModal.classList.add('visible');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeImportModal() {
+            importModal.classList.remove('visible');
+            document.body.style.overflow = '';
+        }
+
+        // Close modal on overlay click
+        importModal.addEventListener('click', function(e) {
+            if (e.target === importModal) closeImportModal();
+        });
+
+        // Close button
+        importModalClose.addEventListener('click', closeImportModal);
+
+        // Escape key to close
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && importModal.classList.contains('visible')) {
+                closeImportModal();
+            }
+        });
+
+        // Upload file option
+        importFromFile.addEventListener('click', function() {
+            closeImportModal();
+            fileInput.click();
+        });
+
+        // Paste from clipboard option
+        importFromClipboard.addEventListener('click', async function() {
+            try {
+                const text = await navigator.clipboard.readText();
+                handleJSONText(text, 'clipboard');
+                closeImportModal();
+            } catch (err) {
+                alert('Could not read clipboard. Please check your browser permissions or try using Ctrl/Cmd+V.');
+            }
+        });
+
+        // Global paste handler (Cmd/Ctrl+V when modal is open or anywhere when no input focused)
+        document.addEventListener('paste', function(e) {
+            // Don't intercept if user is typing in search
+            if (document.activeElement === searchInput) return;
+
+            const text = e.clipboardData.getData('text');
+            const trimmed = text ? text.trim() : '';
+            if (trimmed && (trimmed.startsWith('{') || trimmed.startsWith('['))) {
+                e.preventDefault();
+                handleJSONText(text, 'clipboard');
+                if (importModal.classList.contains('visible')) {
+                    closeImportModal();
+                }
+            }
+        });
 
         // File input change
         fileInput.addEventListener('change', function(e) {
@@ -903,25 +1192,35 @@
 
             const reader = new FileReader();
             reader.onload = function(e) {
-                try {
-                    jsonData = JSON.parse(e.target.result);
-                    saveJSON(jsonData);
-
-                    // Brief success feedback
-                    dropHint.classList.add('success');
-                    const orig = dropHint.textContent;
-                    dropHint.innerHTML = dropHint.querySelector('svg').outerHTML + ' Loaded!';
-                    setTimeout(() => {
-                        dropHint.classList.remove('success');
-                        dropHint.innerHTML = dropHint.querySelector('svg').outerHTML + ' Drop JSON anywhere';
-                    }, 1500);
-
-                    renderJSON(jsonData);
-                } catch (error) {
-                    alert('Invalid JSON: ' + error.message);
-                }
+                handleJSONText(e.target.result, 'file');
             };
             reader.readAsText(file);
+        }
+
+        function handleJSONText(text, source) {
+            try {
+                jsonData = JSON.parse(text);
+                saveJSON(jsonData);
+
+                // Brief success feedback
+                showSuccessFeedback(source);
+                renderJSON(jsonData);
+            } catch (error) {
+                alert('Invalid JSON: ' + error.message);
+            }
+        }
+
+        function showSuccessFeedback(source) {
+            const svgHTML = dropHint.querySelector('svg').outerHTML;
+            const message = source === 'clipboard' ? ' Pasted!' : ' Loaded!';
+
+            dropHint.classList.add('success');
+            dropHint.innerHTML = svgHTML + message;
+
+            setTimeout(() => {
+                dropHint.classList.remove('success');
+                dropHint.innerHTML = svgHTML + ' Drop JSON anywhere';
+            }, 1500);
         }
 
         function renderJSON(data) {
@@ -937,27 +1236,31 @@
 
             const fragment = document.createDocumentFragment();
             const isArray = Array.isArray(data);
-            const entries = isArray ? data : Object.keys(data);
-            const count = isArray ? data.length : entries.length;
 
             if (isRoot) {
                 const openLine = document.createElement('div');
                 openLine.className = 'json-line';
-                openLine.textContent = '{';
+                openLine.textContent = isArray ? '[' : '{';
                 fragment.appendChild(openLine);
 
                 const childrenDiv = document.createElement('div');
                 childrenDiv.className = 'json-children expanded';
 
-                entries.forEach(function(key) {
-                    childrenDiv.appendChild(buildKeyValueLine(key, data[key]));
-                });
+                if (isArray) {
+                    data.forEach(function(item, idx) {
+                        childrenDiv.appendChild(buildKeyValueLine(String(idx), item));
+                    });
+                } else {
+                    Object.keys(data).forEach(function(key) {
+                        childrenDiv.appendChild(buildKeyValueLine(key, data[key]));
+                    });
+                }
 
                 fragment.appendChild(childrenDiv);
 
                 const closeLine = document.createElement('div');
                 closeLine.className = 'json-line';
-                closeLine.textContent = '}';
+                closeLine.textContent = isArray ? ']' : '}';
                 fragment.appendChild(closeLine);
             }
 
@@ -1154,6 +1457,13 @@
             document.querySelectorAll('.json-children').forEach(function(c) { c.classList.remove('expanded'); });
             var rootChildren = document.querySelector('#jsonTree > .json-children');
             if (rootChildren) rootChildren.classList.add('expanded');
+        }
+
+        function clearJSON() {
+            jsonData = null;
+            localStorage.removeItem(STORAGE_KEY);
+            clearSearch();
+            showEmptyState();
         }
 
         // --- Search / Filter ---
